@@ -1,0 +1,72 @@
+# Multi-way Classifier with Quantified Uncertainty
+
+Many classifiers provide an answer with no information about how good
+the answer is.  This exercise uses Stan via Richard McElreath's
+`rethinking` package to train a classifier that knows how to say,
+"Uh... I can't really tell."
+
+For the code below, if a library $X$ fails to load you can try,
+`install.packages("X")` and Google for more information about the
+package.
+
+```{r}
+library(rethinking)
+library(tidyverse)
+```
+
+## Create fake data
+
+First, create some very easy to classify data, using the four
+Cartesian sectors.
+
+```{r}
+s1 <- rmvnorm(50, c(10,10), 0.5 * diag(2))
+s2 <- rmvnorm(50, c(-10,10), 0.5 * diag(2))
+s3 <- rmvnorm(50, c(-10,-10), 0.5 * diag(2))
+s4 <- rmvnorm(50, c(10,-10), 0.5 * diag(2))
+d <- cbind(1, s1)
+d <- rbind(d, cbind(2, s2))
+d <- rbind(d, cbind(3, s3))
+d <- rbind(d, cbind(4, s4))
+d <- data.frame(d)
+names(d) <- c("sector", "x", "y")
+d[sample(nrow(d), 10),]
+```
+
+It looks pretty easy to classify!
+
+```{r}
+ggplot(d, aes(x=x, y=y, color=factor(sector))) + geom_point()
+```
+
+(I didn't make `d$sector` a factor in the data frame, because later on
+Stan wouldn't like that.  It likes integers.)
+
+## Create a model
+
+I don't really like models that treat one of the classes as the
+reference, but that's the only kind of model I know how to use for
+N-way classification right now.  So I guess sector one can be the
+baseline.
+
+It takes about thirty seconds to fit the model on my machine.  Part of
+that is waiting for Stan's model-specific C++ code to be generated and
+compiled.
+
+```{r}
+system.time(m <- map2stan(
+  alist(sector ~ dcategorical(softmax(0, s2, s3, s4)),
+    s2 <- a2 + b2*x + c2*y,
+    s3 <- a3 + b3*x + c3*y,
+    s4 <- a4 + b4*x + c4*y,
+    c(a2,a3,a4, b2, b3, b4, c2, c3, c4) ~ dnorm(0, 5)
+  ),data=d))
+```
+
+OK.  Now let's check that the model predicts sector three for the true
+mean of the sector-three data.
+
+```{r}
+str(link(m, data.frame(x=-10, y=-10)))
+```
+
