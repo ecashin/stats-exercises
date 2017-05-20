@@ -1,0 +1,65 @@
+# Checking for Fit
+
+In ["Hype and Heavy Tails: A Closer Look at Data
+Breaches"](http://www.econinfosec.org/archive/weis2015/papers/WEIS_2015_edwards.pdf),
+2015, the authors use the Kolmogorov-Smirnov test to make sure that
+their model selection should not be immediately rejected.  They
+mention thick tails, but they don't use Student's t distribution for
+log breach size.  They use the Gaussian.  But the t distribution has a
+higher p-value in the K-S test.
+
+```{r}
+source("prep.R")
+dd <- prep.data("~/data/privacyrights.org/select-all.csv")
+d <- dd$prepped
+xx <- as.numeric(d$Total.Records)
+summary(xx)
+```
+
+How far out is that max?
+
+```{r}
+library(ggplot2)
+qplot(xx)
+tail(sort(xx))
+```
+
+It's pretty far out there, but not *too* crazy.  Can we rule out the
+log normal distribution as a model for this data?
+
+```{r}
+y <- log(xx)
+normal <- rnorm(length(y), mean(y), sd(y))
+ks.test(y, normal)
+```
+
+No, Edwards et al. don't want to rule out the model when the p-value
+is above 0.05.
+
+Just out of curiousity, how's the t distribution with---say---five
+degrees of freedom?
+
+```{r}
+t_dist <- rt(length(y), 5) * sd(y) + mean(y)
+ks.test(y, t_dist)
+```
+
+Not as good.
+
+So I think we can go ahead with log-normal as a model for breach size.
+
+```{r}
+library(tidyr)
+
+df <- data.frame(
+    log_size = y,
+    t_dist = t_dist,
+    normal = normal
+) %>% gather()
+
+ggplot(df, aes(value, color=key)) + geom_density()
+```
+
+They both look OK, and we *know* that some number of degrees of
+freedom will make the t distribution be indistinguishable from the
+normal, but meh.
