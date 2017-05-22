@@ -8,6 +8,14 @@ mention thick tails, but they don't use Student's t distribution for
 log breach size.  They use the Gaussian.  But the t distribution has a
 higher p-value in the K-S test.
 
+## Total Records
+
+Although I can't find a definition for the fields in the data from
+privacyrights.org, it looks like query results have an equal number of
+"Total.Records" and "Records.Breached".  The second has more prose
+inserted in the value, e.g., "1.2 million" and parenthetical notes.
+So I'm using total records below.
+
 ```{r}
 source("prep.R")
 dd <- prep.data("~/data/privacyrights.org/select-all.csv")
@@ -60,6 +68,4 @@ df <- data.frame(
 ggplot(df, aes(value, color=key)) + geom_density()
 ```
 
-They both look OK, and we *know* that some number of degrees of
-freedom will make the t distribution be indistinguishable from the
-normal, but meh.
+They both look OK, but `ks.test` likes log-normal best.
