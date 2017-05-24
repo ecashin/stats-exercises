@@ -44,7 +44,8 @@ d <- d %>% mutate(date=mdy(Date.Made.Public))
 ```
 
 Then by using Richard McElreath's *rethinking* package, it's easy to
-use the powerful Stan probabilistic modeling tool.
+use the powerful Stan probabilistic modeling tool via `map2stan` or
+the quick alternative `map`, which requires no C++ compilation step.
 
 ```{r}
 library(rethinking)
@@ -75,3 +76,10 @@ ggplot(m.data, aes(t, log(y), color=kind)) +
 ```
 
 Noisy and flat, like the results in Edwards et al.
+
+Next, we have to figure out what questions we're interested in
+answering with this model as a tool for understanding the data.
+
+## Test Quantities
+
+*todo*
